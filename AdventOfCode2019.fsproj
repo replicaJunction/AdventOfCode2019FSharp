@@ -1,0 +1,15 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Library</OutputType>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="IntCode.fs" />
+    <None Include="Day1.fsx" />
+    <None Include="Day2.fsx" />
+    <None Include="Day3.fsx" />
+  </ItemGroup>
+
+</Project>
