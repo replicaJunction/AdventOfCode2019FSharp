@@ -17,6 +17,19 @@ let rec replace v i l = //v - value to substitute, i - index at which to substit
     | i, x::xs -> x::replace v (i - 1) xs //simply iterates one further through the list
     | i, [] -> failwith "index out of range" // the given index is outside the bounds of the list
 
+[<Literal>]
+let private MEMORY_STRING_SEPARATOR = ','
+
+let stringToMemory (x:string) : Memory =
+    x.Split([|MEMORY_STRING_SEPARATOR|])
+    |> Array.map int
+    |> Array.toList
+
+let memoryToString (x:Memory) =
+    x
+    |> List.map string
+    |> String.concat (string MEMORY_STRING_SEPARATOR)
+
 module Instruction =
     module Param =
         type Mode =
@@ -71,6 +84,10 @@ module Instruction =
         | Two
         | Three
         | Four
+        | Five
+        | Six
+        | Seven
+        | Eight
         | NinetyNine
 
         let parse rawCode =
@@ -79,6 +96,10 @@ module Instruction =
             | 2 -> Two
             | 3 -> Three
             | 4 -> Four
+            | 5 -> Five
+            | 6 -> Six
+            | 7 -> Seven
+            | 8 -> Eight
             | 99 -> NinetyNine
             | _ -> failwithf "Unhandled opcode %i" rawCode
 
@@ -88,6 +109,10 @@ module Instruction =
             | Two -> 3
             | Three -> 1
             | Four -> 1
+            | Five -> 2
+            | Six -> 2
+            | Seven -> 3
+            | Eight -> 3
             | NinetyNine -> 0
 
     type T = {
@@ -138,7 +163,16 @@ module Instruction =
             Params = parameters
         }
 
+    // These properties are Some if they were modified by the instruction, and None if there
+    // was no change by the instruction.
+    type private InstructionResult = {
+        Memory: Memory option
+        Pointer: Pointer option
+        Output: ProgramOutput option
+    }
+
     let invokeInstruction (currentState:ProgramState) (instruction:T) =
+
         let invokeOne (mem:Memory) (parameters:Param.T list) =
             // Defined in Day 2:
             //
@@ -158,7 +192,14 @@ module Instruction =
             let replacePosition = Param.valueForWriting parameters.[2]
 
             let newValue = firstValue + secondValue
-            mem |> replace newValue replacePosition
+            let newMem = mem |> replace newValue replacePosition
+
+            {
+                Memory = Some newMem
+                Pointer = None
+                Output = None
+            }
+
 
         let invokeTwo (mem:Memory) (parameters:Param.T list) =
             // Defined in Day 2:
@@ -173,7 +214,13 @@ module Instruction =
             let replacePosition = Param.valueForWriting parameters.[2]
 
             let newValue = firstValue * secondValue
-            mem |> replace newValue replacePosition
+            let newMem = mem |> replace newValue replacePosition
+
+            {
+                Memory = Some newMem
+                Pointer = None
+                Output = None
+            }
 
         let invokeThree (mem:Memory) input (param:Param.T) =
             // Defined in Day 5:
@@ -184,7 +231,13 @@ module Instruction =
             let (ProgramInput inputRaw) = input
             let outputPos = Param.valueForWriting param
 
-            mem |> replace inputRaw outputPos
+            let newMem = mem |> replace inputRaw outputPos
+
+            {
+                Memory = Some newMem
+                Pointer = None
+                Output = None
+            }
 
         let invokeFour (mem:Memory) (param:Param.T) =
             // Defined in Day 5:
@@ -192,57 +245,141 @@ module Instruction =
             // 4,50 would output the value at address 50.
 
             let output = Param.valueForReading mem param |> ProgramOutput
-            output
+
+            {
+                Memory = None
+                Pointer = None
+                Output = Some output
+            }
+
+        let invokeFive (mem:Memory) (parameters:Param.T list) =
+            // Defined in Day 5, part 2:
+            // Opcode 5 is jump-if-true: if the first parameter is non-zero, it sets
+            // the instruction pointer to the value from the second parameter.
+            // Otherwise, it does nothing.
+
+            let firstValue = Param.valueForReading mem parameters.[0]
+            let newPointer =
+                if firstValue <> 0 then
+                    let newPointerPos = Param.valueForReading mem parameters.[1]
+                    Some newPointerPos
+                else
+                    None
+
+            {
+                Memory = None
+                Pointer = None
+                Output = None
+            }
+
+        let invokeSix (mem:Memory) (parameters:Param.T list) =
+            // Defined in Day 5, part 2:
+            // Opcode 6 is jump-if-false: if the first parameter is zero, it sets
+            // the instruction pointer to the value from the second parameter.
+            // Otherwise, it does nothing.
+
+            let firstValue = Param.valueForReading mem parameters.[0]
+            let newPointer =
+                if firstValue = 0 then
+                    let newPointerPos = Param.valueForReading mem parameters.[1]
+                    Some newPointerPos
+                else
+                    None
+
+            {
+                Memory = None
+                Pointer = None
+                Output = None
+            }
+
+        let invokeSeven (mem:Memory) (parameters:Param.T list) =
+            // Defined in Day 5, part 2:
+            // Opcode 7 is less than: if the first parameter is less than the second
+            // parameter, it stores 1 in the position given by the third parameter.
+            // Otherwise, it stores 0.
+
+            let firstValue = Param.valueForReading mem parameters.[0]
+            let secondValue = Param.valueForReading mem parameters.[1]
+
+            let newValue = if firstValue < secondValue then 1 else 0
+            let outputPos = Param.valueForWriting parameters.[2]
+            let newMem = mem |> replace 1 outputPos
+
+            {
+                Memory = Some newMem
+                Pointer = None
+                Output = None
+            }
+
+        let invokeEight (mem:Memory) (parameters:Param.T list) =
+            // Defined in Day 5, part 2:
+            // Opcode 8 is equals: if the first parameter is equal to the second
+            // parameter, it stores 1 in the position given by the third parameter.
+            // Otherwise, it stores 0.
+
+            let firstValue = Param.valueForReading mem parameters.[0]
+            let secondValue = Param.valueForReading mem parameters.[1]
+
+            let newValue = if firstValue = secondValue then 1 else 0
+            let outputPos = Param.valueForWriting parameters.[2]
+            let newMem = mem |> replace 1 outputPos
+
+            {
+                Memory = Some newMem
+                Pointer = None
+                Output = None
+            }
 
         match currentState with
         | Complete _ -> currentState
         | Running (mem, pointer, input, previousOutputs) ->
             let (Pointer ptr) = pointer
-            let newMemory, currentOutput =
+            let result =
                 match instruction.OpCode with
-                | OpCode.Type.One ->
-                    let newMem = invokeOne mem instruction.Params
-                    (Some newMem), None
-                | OpCode.Type.Two ->
-                    let newMem = invokeTwo mem instruction.Params
-                    (Some newMem), None
+                | OpCode.Type.One -> invokeOne mem instruction.Params |> Some
+                | OpCode.Type.Two -> invokeTwo mem instruction.Params |> Some
                 | OpCode.Type.Three ->
                     match input with
                     | None -> failwith "No program input was provided. Opcode 3 requires program input."
-                    | Some i ->
-                        let newMem = invokeThree mem i instruction.Params.[0]
-                        (Some newMem), None
-                | OpCode.Type.Four ->
-                    let output = invokeFour mem instruction.Params.[0]
-                    (Some mem), (Some output)
-                | OpCode.Type.NinetyNine ->
-                    None, None
+                    | Some i -> invokeThree mem i instruction.Params.[0] |> Some
+                | OpCode.Type.Four -> invokeFour mem instruction.Params.[0] |> Some
+                | OpCode.Type.Five -> invokeFive mem instruction.Params |> Some
+                | OpCode.Type.Six -> invokeSix mem instruction.Params |> Some
+                | OpCode.Type.Seven -> invokeSeven mem instruction.Params |> Some
+                | OpCode.Type.Eight -> invokeEight mem instruction.Params |> Some
+                | OpCode.Type.NinetyNine -> None
 
-            let newPointer = ptr + (OpCode.paramCount instruction.OpCode) + 1 |> Pointer
-            let newOutputs =
-                match currentOutput with
-                | Some s -> previousOutputs @ [s]
-                | None -> previousOutputs
+            match result with
+            | None -> Complete (mem, previousOutputs)
+            | Some r ->
+                let newMem =
+                    match r.Memory with
+                    | Some s -> s
+                    | None -> mem
 
-            match newMemory with
-            | Some s ->
-                Running (s, newPointer, input, newOutputs)
-            | None ->
-                Complete (mem, newOutputs)
+                let newPointer =
+                    match r.Pointer with
+                    | Some s -> s
+                    | None ->
+                        // As explained in Day 5, part 2:
+                        //
+                        // Normally, after an instruction is finished, the instruction pointer
+                        // increases by the number of values in that instruction. However, if the
+                        // instruction modifies the instruction pointer, that value is used and the
+                        // instruction pointer is not automatically increased.
+
+                        ptr + (OpCode.paramCount instruction.OpCode) + 1 |> Pointer
+
+                let newOutputs =
+                    match r.Output with
+                    | Some s -> previousOutputs @ [s]
+                    | None -> previousOutputs
+
+                Running (newMem, newPointer, input, newOutputs)
 
 module Program =
-    [<Literal>]
-    let private separator = ','
-
-    let fromString (x:string) : Memory =
-        x.Split([|separator|])
-        |> Array.map int
-        |> Array.toList
-
-    let toString (x:Memory) =
-        x
-        |> List.map string
-        |> String.concat (string separator)
+    let fromString (x:string) : Memory = stringToMemory x
+    let toString (x:Memory) = memoryToString x
 
     let rec private step state =
         match state with
