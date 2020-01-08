@@ -182,7 +182,7 @@ module Instruction =
             // and store it at address 50.
 
             let (ProgramInput inputRaw) = input
-            let outputPos = Param.valueForReading mem param
+            let outputPos = Param.valueForWriting param
 
             mem |> replace inputRaw outputPos
 
