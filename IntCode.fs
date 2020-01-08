@@ -1,6 +1,6 @@
 ﻿module IntCode
 
-let IS_DEBUG_MODE = true
+let IS_DEBUG_MODE = false
 
 type Memory = int list
 

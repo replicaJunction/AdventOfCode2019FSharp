@@ -29,7 +29,7 @@ module Part1 =
 module Part2 =
     let checkTests() =
         let checkSingleOutput program input expected =
-            printfn "\tInput %i" input
+            printf "    Input %3i:\t" input
 
             let actualInput = input |> IntCode.ProgramInput |> Some
 
@@ -44,26 +44,31 @@ module Part2 =
             else
                 printfn "\t- FAIL: expected [%i] but received [%i]" expected actual
 
-            printfn ""
+        // Example 1: should return 1 if (input = 8)
+        let example1 =" 3,9,8,9,10,9,4,9,99,-1,8"
+        printfn "Example 1: [%s]" example1
+        checkSingleOutput example1 4 0
+        checkSingleOutput example1 8 1
 
-        //// Example 1: should return 1 if (input = 8)
-        //let example1 =" 3,9,8,9,10,9,4,9,99,-1,8"
-        //checkSingleOutput example1 4 0
-        //checkSingleOutput example1 8 1
+        // Example 2: should return 1 if (input < 8)
+        let example2 = "3,9,7,9,10,9,4,9,99,-1,8"
+        printfn "Example 2: [%s]" example2
+        checkSingleOutput example2 4 1
+        checkSingleOutput example2 8 0
+        checkSingleOutput example2 9 0
 
-        //// Example 2: should return 1 if (input < 8)
-        //checkSingleOutput "3,9,7,9,10,9,4,9,99,-1,8" 4 1
-        //checkSingleOutput "3,9,7,9,10,9,4,9,99,-1,8" 8 0
-        //checkSingleOutput "3,9,7,9,10,9,4,9,99,-1,8" 9 0
+        // Example 3: should return 1 if (input = 8) (tests immediate mode)
+        let example3 = "3,3,1108,-1,8,3,4,3,99"
+        printfn "Example 3: [%s]" example3
+        checkSingleOutput example3 4 0
+        checkSingleOutput example3 8 1
 
-        //// Example 3: should return 1 if (input = 8) (tests immediate mode)
-        //checkSingleOutput "3,3,1108,-1,8,3,4,3,99" 4 0
-        //checkSingleOutput "3,3,1108,-1,8,3,4,3,99" 8 1
-
-        //// Example 4: should return 1 if (input < 8) (tests immediate mode)
-        //checkSingleOutput "3,3,1107,-1,8,3,4,3,99" 4 1
-        //checkSingleOutput "3,3,1107,-1,8,3,4,3,99" 8 0
-        //checkSingleOutput "3,3,1107,-1,8,3,4,3,99" 9 0
+        // Example 4: should return 1 if (input < 8) (tests immediate mode)
+        let example4 = "3,3,1107,-1,8,3,4,3,99"
+        printfn "Example 4: [%s]" example4
+        checkSingleOutput example4 4 1
+        checkSingleOutput example4 8 0
+        checkSingleOutput example4 9 0
 
         // Example 5: should return 0 if the input was 0 or 1 if the input was non-zero
         let example5 = "3,12,6,12,15,1,13,14,13,4,13,99,-1,0,1,9"
@@ -73,22 +78,37 @@ module Part2 =
         checkSingleOutput example5 1 1
         checkSingleOutput example5 5 1
 
-        //// Example 6: same as above, but testing with immediate mode
-        //checkSingleOutput "3,3,1105,-1,9,1101,0,0,12,4,12,99,1" 0 0
-        //checkSingleOutput "3,3,1105,-1,9,1101,0,0,12,4,12,99,1" -1 1
-        //checkSingleOutput "3,3,1105,-1,9,1101,0,0,12,4,12,99,1" 1 1
-        //checkSingleOutput "3,3,1105,-1,9,1101,0,0,12,4,12,99,1" 5 1
+        // Example 6: same as above, but testing with immediate mode
+        let example6 = "3,3,1105,-1,9,1101,0,0,12,4,12,99,1"
+        printfn "Example 6: [%s]" example6
+        checkSingleOutput example6 0 0
+        checkSingleOutput example6 -1 1
+        checkSingleOutput example6 1 1
+        checkSingleOutput example6 5 1
 
-        //// Example 7: "here's a larger example"
-        //// Outputs 999 if (input < 8)
-        //// Outputs 1000 if (input = 8)
-        //// Outputs 1001 if (input > 8)
-        //let example8 = "3,21,1008,21,8,20,1005,20,22,107,8,21,20,1006,20,31,1106,0,36,98,0,0,1002,21,125,20,4,20,1105,1,46,104,999,1105,1,46,1101,1000,1,20,4,20,1105,1,46,98,99"
-        //checkSingleOutput example8 -4 999
-        //checkSingleOutput example8 4 999
-        //checkSingleOutput example8 8 1000
-        //checkSingleOutput example8 9 1001
-        //checkSingleOutput example8 909 1001
+        // Example 7: "here's a larger example"
+        // Outputs 999 if (input < 8)
+        // Outputs 1000 if (input = 8)
+        // Outputs 1001 if (input > 8)
+        let example7 = "3,21,1008,21,8,20,1005,20,22,107,8,21,20,1006,20,31,1106,0,36,98,0,0,1002,21,125,20,4,20,1105,1,46,104,999,1105,1,46,1101,1000,1,20,4,20,1105,1,46,98,99"
+        printfn "Example 7"
+        checkSingleOutput example7 -4 999
+        checkSingleOutput example7 4 999
+        checkSingleOutput example7 8 1000
+        checkSingleOutput example7 9 1001
+        checkSingleOutput example7 909 1001
+
+    let solve() =
+        let userInput = IntCode.ProgramInput 5
+
+        let (IntCode.ProgramOutput solution) =
+            IntCode.Program.fromString puzzleInput
+            |> IntCode.Program.run (Some userInput)
+            |> snd
+            |> List.head
+
+        printfn "Part 2 solution: %i" solution
 
 //Part1.solve()
-Part2.checkTests()
+//Part2.checkTests()
+Part2.solve()
