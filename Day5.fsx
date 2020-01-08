@@ -26,4 +26,69 @@ module Part1 =
                 )
             |> ignore
 
-Part1.solve()
+module Part2 =
+    let checkTests() =
+        let checkSingleOutput program input expected =
+            printfn "\tInput %i" input
+
+            let actualInput = input |> IntCode.ProgramInput |> Some
+
+            let (IntCode.ProgramOutput actual) =
+                IntCode.Program.fromString program
+                |> IntCode.Program.run actualInput
+                |> snd
+                |> List.head
+
+            if expected = actual then
+                printfn "\t+ OK: [%i]" actual
+            else
+                printfn "\t- FAIL: expected [%i] but received [%i]" expected actual
+
+            printfn ""
+
+        //// Example 1: should return 1 if (input = 8)
+        //let example1 =" 3,9,8,9,10,9,4,9,99,-1,8"
+        //checkSingleOutput example1 4 0
+        //checkSingleOutput example1 8 1
+
+        //// Example 2: should return 1 if (input < 8)
+        //checkSingleOutput "3,9,7,9,10,9,4,9,99,-1,8" 4 1
+        //checkSingleOutput "3,9,7,9,10,9,4,9,99,-1,8" 8 0
+        //checkSingleOutput "3,9,7,9,10,9,4,9,99,-1,8" 9 0
+
+        //// Example 3: should return 1 if (input = 8) (tests immediate mode)
+        //checkSingleOutput "3,3,1108,-1,8,3,4,3,99" 4 0
+        //checkSingleOutput "3,3,1108,-1,8,3,4,3,99" 8 1
+
+        //// Example 4: should return 1 if (input < 8) (tests immediate mode)
+        //checkSingleOutput "3,3,1107,-1,8,3,4,3,99" 4 1
+        //checkSingleOutput "3,3,1107,-1,8,3,4,3,99" 8 0
+        //checkSingleOutput "3,3,1107,-1,8,3,4,3,99" 9 0
+
+        // Example 5: should return 0 if the input was 0 or 1 if the input was non-zero
+        let example5 = "3,12,6,12,15,1,13,14,13,4,13,99,-1,0,1,9"
+        printfn "Example 5: [%s] " example5
+        checkSingleOutput example5 0 0
+        checkSingleOutput example5 -1 1
+        checkSingleOutput example5 1 1
+        checkSingleOutput example5 5 1
+
+        //// Example 6: same as above, but testing with immediate mode
+        //checkSingleOutput "3,3,1105,-1,9,1101,0,0,12,4,12,99,1" 0 0
+        //checkSingleOutput "3,3,1105,-1,9,1101,0,0,12,4,12,99,1" -1 1
+        //checkSingleOutput "3,3,1105,-1,9,1101,0,0,12,4,12,99,1" 1 1
+        //checkSingleOutput "3,3,1105,-1,9,1101,0,0,12,4,12,99,1" 5 1
+
+        //// Example 7: "here's a larger example"
+        //// Outputs 999 if (input < 8)
+        //// Outputs 1000 if (input = 8)
+        //// Outputs 1001 if (input > 8)
+        //let example8 = "3,21,1008,21,8,20,1005,20,22,107,8,21,20,1006,20,31,1106,0,36,98,0,0,1002,21,125,20,4,20,1105,1,46,104,999,1105,1,46,1101,1000,1,20,4,20,1105,1,46,98,99"
+        //checkSingleOutput example8 -4 999
+        //checkSingleOutput example8 4 999
+        //checkSingleOutput example8 8 1000
+        //checkSingleOutput example8 9 1001
+        //checkSingleOutput example8 909 1001
+
+//Part1.solve()
+Part2.checkTests()

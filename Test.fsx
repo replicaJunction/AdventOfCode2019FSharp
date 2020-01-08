@@ -1,6 +1,6 @@
 ﻿#r "bin/Debug/netcoreapp3.1/AdventOfCode2019.dll"
 
-let mem = [1002;4;3;4;33]
-let ptr = IntCode.Pointer 0
-
-IntCode.Instruction.getInstruction mem ptr
+let prgm = IntCode.Program.fromString "3,0,4,0,99"
+let memory, output = IntCode.Program.run (Some (IntCode.ProgramInput 5)) prgm
+if output.IsSome then
+    printfn "Output: %O" (output.Value)

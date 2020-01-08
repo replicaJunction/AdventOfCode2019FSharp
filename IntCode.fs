@@ -1,6 +1,6 @@
 ﻿module IntCode
 
-let IS_DEBUG_MODE = false
+let IS_DEBUG_MODE = true
 
 type Memory = int list
 
@@ -268,13 +268,13 @@ module Instruction =
             let newPointer =
                 if firstValue <> 0 then
                     let newPointerPos = Param.valueForReading mem parameters.[1]
-                    Some newPointerPos
+                    Some (Pointer newPointerPos)
                 else
                     None
 
             {
                 Memory = None
-                Pointer = None
+                Pointer = newPointer
                 Output = None
             }
 
@@ -288,13 +288,13 @@ module Instruction =
             let newPointer =
                 if firstValue = 0 then
                     let newPointerPos = Param.valueForReading mem parameters.[1]
-                    Some newPointerPos
+                    Some (Pointer newPointerPos)
                 else
                     None
 
             {
                 Memory = None
-                Pointer = None
+                Pointer = newPointer
                 Output = None
             }
 
@@ -342,7 +342,7 @@ module Instruction =
             let (Pointer ptr) = pointer
 
             dprintf
-                "Memory: [%s]\nInstruction pointer: %i\nCurrent instruction: %O\n"
+                "\nMemory: [%s]\nInstruction pointer: %i\nCurrent instruction: %O"
                 (memoryToString mem)
                 ptr
                 instruction
