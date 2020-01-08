@@ -7,8 +7,8 @@ type ProgramInput = ProgramInput of int
 type ProgramOutput = ProgramOutput of int
 
 type ProgramState =
-| Running of Memory * Pointer * ProgramInput option
-| Complete of Memory * ProgramOutput option
+| Running of Memory * Pointer * ProgramInput option * ProgramOutput list
+| Complete of Memory * ProgramOutput list
 
 let rec replace v i l = //v - value to substitute, i - index at which to substitute, l - the list
     // https://stackoverflow.com/a/23482571
@@ -196,9 +196,9 @@ module Instruction =
 
         match currentState with
         | Complete _ -> currentState
-        | Running (mem, pointer, input) ->
+        | Running (mem, pointer, input, previousOutputs) ->
             let (Pointer ptr) = pointer
-            let newMemory, newOutput =
+            let newMemory, currentOutput =
                 match instruction.OpCode with
                 | OpCode.Type.One ->
                     let newMem = invokeOne mem instruction.Params
@@ -219,12 +219,16 @@ module Instruction =
                     None, None
 
             let newPointer = ptr + (OpCode.paramCount instruction.OpCode) + 1 |> Pointer
+            let newOutputs =
+                match currentOutput with
+                | Some s -> previousOutputs @ [s]
+                | None -> previousOutputs
 
             match newMemory with
             | Some s ->
-                Running (s, newPointer, input)
+                Running (s, newPointer, input, newOutputs)
             | None ->
-                Complete (mem, newOutput)
+                Complete (mem, newOutputs)
 
 module Program =
     [<Literal>]
@@ -243,16 +247,20 @@ module Program =
     let rec private step state =
         match state with
         | Complete _ -> state
-        | Running (memory, pointer, _) ->
+        | Running (memory, pointer, _, _) ->
             Instruction.getInstruction memory pointer
             |> Instruction.invokeInstruction state
             |> step
 
     let run (input:ProgramInput option) (memory:Memory) =
-        let initialState = Running (memory, (Pointer 0), input)
+        let initialState = Running (memory, (Pointer 0), input, List.empty)
         let result = step initialState
         match result with
         | Complete (mem,output) -> (mem, output)
-        | Running (mem, pointer, _) ->
+        | Running (mem, pointer, _, outputs) ->
             let (Pointer ptr) = pointer
-            failwithf "Failed to complete the program. Last pointer: %i Last memory: [%s]" ptr (toString mem)
+            failwithf
+                "Failed to complete the program.\n\tLast pointer: %i\n\tLast memory: [%s]\n\tOutputs: %s"
+                ptr
+                (toString mem)
+                (outputs |> List.map (fun (ProgramOutput value) -> string value) |> String.concat ",")
