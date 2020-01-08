@@ -2,9 +2,13 @@
 
 type Memory = int list
 
+type Pointer = Pointer of int
+type ProgramInput = ProgramInput of int
+type ProgramOutput = ProgramOutput of int
+
 type ProgramState =
-| Running of Memory * int
-| Complete of Memory
+| Running of Memory * Pointer
+| Complete of Memory * ProgramOutput option
 
 let rec replace v i l = //v - value to substitute, i - index at which to substitute, l - the list
     // https://stackoverflow.com/a/23482571
@@ -17,31 +21,50 @@ module private Instruction =
     type ValidOpCodes =
     | One of int * int * int
     | Two of int * int * int
+    | Three of ProgramInput * int
+    | Four of int
     | NinetyNine
 
-    let getInstruction (mem:Memory) (pointer:int) =
-        let opCode = mem.[pointer]
+    let getInstruction (input: ProgramInput option) (mem:Memory) (pointer:Pointer) =
+        let (Pointer ptr) = pointer
+        let opCode = mem.[ptr]
 
         try
             match opCode with
             | 1 ->
                 One (
-                    mem.[pointer + 1],
-                    mem.[pointer + 2],
-                    mem.[pointer + 3]
+                    mem.[ptr + 1],
+                    mem.[ptr + 2],
+                    mem.[ptr + 3]
                     )
             | 2 ->
                 Two (
-                    mem.[pointer + 1],
-                    mem.[pointer + 2],
-                    mem.[pointer + 3]
+                    mem.[ptr + 1],
+                    mem.[ptr + 2],
+                    mem.[ptr + 3]
                     )
+            | 3 ->
+                match input with
+                | None ->
+                    failwithf
+                        "No input was provided for opcode 3, which requires an input\n\tPointer position: %i\n\tCurrent memory: [%s]"
+                        ptr
+                        (mem |> List.map string |> String.concat ",")
+                | Some s ->
+                    Three (
+                        s,
+                        mem.[ptr + 1]
+                        )
+            | 4 ->
+                Four (
+                    mem.[ptr + 1]
+                )
             | 99 ->
                 NinetyNine
             | _ ->
                 failwithf "Unknown opcode %i" opCode
         with
-        | exn -> failwithf "Failed to handle opcode %i at pointer %i: %O" opCode pointer exn
+        | exn -> failwithf "Failed to handle opcode %i at pointer %i: %O" opCode ptr exn
 
     let invokeInstruction (currentState:ProgramState) (instruction:ValidOpCodes) =
         let invokeOne (mem:Memory) (x,y,z) =
@@ -84,28 +107,54 @@ module private Instruction =
 
             mem |> replace newValue replacePosition
 
+        let invokeThree (mem:Memory) input outputPos =
+            // Defined in Day 5:
+            // Opcode 3 takes a single integer as input and saves it to the position given by
+            // its only parameter. For example, the instruction 3,50 would take an input value
+            // and store it at address 50.
+
+            let (ProgramInput inputRaw) = input
+            mem |> replace inputRaw outputPos
+
+        let invokeFour (mem:Memory) param =
+            // Defined in Day 5:
+            // Opcode 4 outputs the value of its only parameter. For example, the instruction
+            // 4,50 would output the value at address 50.
+
+            let output = mem.[param] |> ProgramOutput
+            mem, output
+
         match currentState with
         | Complete _ -> currentState
         | Running (mem, pointer) ->
-            let newMemory,newPointer =
+            let newMemory ,newPointer, newOutput =
+                let (Pointer ptr) = pointer
                 match instruction with
                 | One (x,y,z) ->
                     let newMem = invokeOne mem (x, y, z)
-                    let newPointer = pointer + 4 |> Some
-                    newMem,newPointer
+                    let newPointer = ptr + 4 |> Pointer |> Some
+                    newMem, newPointer, None
                 | Two (x,y,z) ->
                     let newMem = invokeTwo mem (x, y, z)
-                    let newPointer = pointer + 4 |> Some
-                    newMem,newPointer
+                    let newPointer = ptr + 4 |> Pointer |> Some
+                    newMem, newPointer, None
+                | Three (i,x) ->
+                    let newMem = invokeThree mem i x
+                    let newPointer = ptr + 2 |> Pointer |> Some
+                    newMem, newPointer, None
+                | Four x ->
+                    let newMem, output = invokeFour mem x
+                    let newPointer = ptr + 2 |> Pointer |> Some
+                    newMem, newPointer, (Some output)
                 | NinetyNine ->
                     // Defined in day 2, code 99 means the program should immediately terminate
-                    mem,None
+                    mem, None, None
 
             match newPointer with
             | Some s ->
                 Running (newMemory, s)
             | None ->
-                Complete newMemory
+                Complete (newMemory, newOutput)
 
 module Program =
     [<Literal>]
@@ -121,16 +170,19 @@ module Program =
         |> List.map string
         |> String.concat (string separator)
 
-    let rec private step state =
+    let rec private step input state =
         match state with
         | Complete _ -> state
         | Running (memory, pointer) ->
-            Instruction.getInstruction memory pointer
+            Instruction.getInstruction input memory pointer
             |> Instruction.invokeInstruction state
-            |> step
+            |> step input
 
-    let run (memory:Memory) =
-        let result = step (Running (memory, 0))
+    let run (input:ProgramInput option) (memory:Memory) =
+        let initialState = Running (memory, (Pointer 0))
+        let result = step input initialState
         match result with
-        | Complete mem -> mem
-        | Running (mem, pointer) -> failwithf "Failed to complete the program. Last pointer: %i Last memory: [%s]" pointer (toString mem)
+        | Complete (mem,output) -> (mem, output)
+        | Running (mem, pointer) ->
+            let (Pointer ptr) = pointer
+            failwithf "Failed to complete the program. Last pointer: %i Last memory: [%s]" ptr (toString mem)

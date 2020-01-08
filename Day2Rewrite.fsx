@@ -7,19 +7,22 @@
 
 let puzzleInput = "1,0,0,3,1,1,2,3,1,3,4,3,1,5,0,3,2,10,1,19,1,19,9,23,1,23,13,27,1,10,27,31,2,31,13,35,1,10,35,39,2,9,39,43,2,43,9,47,1,6,47,51,1,10,51,55,2,55,13,59,1,59,10,63,2,63,13,67,2,67,9,71,1,6,71,75,2,75,9,79,1,79,5,83,2,83,13,87,1,9,87,91,1,13,91,95,1,2,95,99,1,99,6,0,99,2,14,0,0"
 
+let run prgm =
+    IntCode.Program.run None prgm
+    |> fst
+
 module Part1 =
     let checkTestCases() =
         let check program expected =
             printfn "\nRunning program: %s" program
 
             let prgm = IntCode.Program.fromString program
-            let result = IntCode.Program.run prgm
-            let resultStr = result |> IntCode.Program.toString
+            let result = run prgm |> IntCode.Program.toString
 
-            if resultStr = expected then
-                printfn "OK: %s" resultStr
+            if result = expected then
+                printfn "OK: %s" result
             else
-                printfn "FAIL: Expected [%s], actual [%s]" expected resultStr
+                printfn "FAIL: Expected [%s], actual [%s]" expected result
 
         check "1,9,10,3,2,3,11,0,99,30,40,50" "3500,9,10,70,2,3,11,0,99,30,40,50"
         check "1,0,0,0,99" "2,0,0,0,99"
@@ -35,7 +38,7 @@ module Part1 =
             |> IntCode.replace 12 1
             |> IntCode.replace 2 2
 
-        let result = IntCode.Program.run puzzleProgram |> List.head
+        let result = run puzzleProgram |> List.head
         printfn "\nPart 1 solution: %i\n" result
 
 module Part2 =
@@ -48,7 +51,7 @@ module Part2 =
                 |> IntCode.replace noun 1
                 |> IntCode.replace verb 2
 
-            codes |> IntCode.Program.run |> List.head
+            codes |> run |> List.head
 
         let desiredOutput = 19690720
         let noun,verb =
