@@ -13,6 +13,7 @@
     <None Include="Day2Rewrite.fsx" />
     <None Include="Day3.fsx" />
     <None Include="Day4.fsx" />
+    <None Include="Day5.fsx" />
   </ItemGroup>
 
 </Project>
