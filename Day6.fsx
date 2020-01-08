@@ -1869,13 +1869,20 @@ let orbitFromString (str:string) : Orbit =
     let parts = str.Split([|')'|])
     parts.[0], parts.[1]
 
+let buildDirectMap (items: Orbit list) =
+    let folder (state:Map<string, string>) (baseBody, orbitingBody) =
+        state |> Map.add orbitingBody baseBody
+
+    items |> List.fold folder Map.empty
+
 let countOrbits (input:string list) =
     let definitionList = input |> List.map orbitFromString
-    let directMap =
-        definitionList
-        |> List.fold (fun (state:Map<string, string>) (baseBody, orbitingBody) ->
-                state |> Map.add orbitingBody baseBody
-            ) Map.empty
+    //let directMap =
+    //    definitionList
+    //    |> List.fold (fun (state:Map<string, string>) (baseBody, orbitingBody) ->
+    //            state |> Map.add orbitingBody baseBody
+    //        ) Map.empty
+    let directMap = buildDirectMap definitionList
 
     let orbitCount body =
         let rec orbitCountRec i body =
@@ -1893,6 +1900,55 @@ let countOrbits (input:string list) =
     |> List.map fst
     |> List.map orbitCount
     |> List.sum
+
+let pathFromCenter node (map:Map<string, string>) =
+    let rec pathToCenterRec currentItems currentNode =
+        let newItems = [currentNode] @ currentItems
+        if currentNode = "COM" then
+            newItems
+        else
+            let nextItem = map |> Map.find currentNode
+            pathToCenterRec newItems nextItem
+
+    pathToCenterRec [] node
+
+let countTransfers node1 node2 (input:string list) =
+    let map = input |> List.map orbitFromString |> buildDirectMap
+
+    let firstPath = map |> pathFromCenter node1
+    printfn "First path from the center of the universe:"
+    firstPath
+    |> List.map (fun x -> printfn "  %s" x)
+    |> ignore
+
+    let secondPath = map |> pathFromCenter node2
+    printfn "Second path from the center of the universe:"
+    secondPath
+    |> List.map (fun x -> printfn "  %s" x)
+    |> ignore
+
+    let indexInCommon =
+        [0..System.Math.Min(firstPath.Length - 1, secondPath.Length - 1)]
+        |> List.findBack (fun i ->
+            let yourItem = firstPath.[i]
+            let santaItem = secondPath.[i]
+
+            yourItem = santaItem
+            )
+
+    let itemInCommon = firstPath.[indexInCommon]
+    printfn "Last item in common: %s" itemInCommon
+
+    // Remove one from each to adjust for the zero-based index,
+    // and remove a second because we're interested in the bodies
+    // the nodes are actually orbiting, not the nodes themselves.
+    let fromFirstNodeToCommon = firstPath.Length - indexInCommon - 2
+    let fromSecondNodeToCommon = secondPath.Length - indexInCommon - 2
+
+    let totalSteps = fromFirstNodeToCommon + fromSecondNodeToCommon
+
+    printfn "Total steps required: %i" totalSteps
+    totalSteps
 
 module Part1 =
     let checkTest() =
@@ -1938,5 +1994,43 @@ module Part1 =
 
         printfn "\nPart 1 answer: %i" count
 
+module Part2 =
+    let checkTest () =
+        let check input expected =
+            let actual = input |> countTransfers "YOU" "SAN"
+
+            if expected = actual then
+                printfn "OK: %i" expected
+            else
+                printfn "FAIL: expected %i but got %i" expected actual
+
+        let exampleInput = [
+            "COM)B"
+            "B)C"
+            "C)D"
+            "D)E"
+            "E)F"
+            "B)G"
+            "G)H"
+            "D)I"
+            "E)J"
+            "J)K"
+            "K)L"
+            "K)YOU"
+            "I)SAN"
+        ]
+
+        check exampleInput 4
+
+    let solve () =
+        let answer =
+            puzzleInput
+            |> Array.toList
+            |> countTransfers "YOU" "SAN"
+
+        printfn "\nPart 2 answer: %i" answer
+
 Part1.checkTest()
 Part1.solve()
+Part2.checkTest()
+Part2.solve()
