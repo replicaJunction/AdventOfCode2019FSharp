@@ -1,5 +1,7 @@
 ﻿module IntCode
 
+let IS_DEBUG_MODE = false
+
 type Memory = int list
 
 type Pointer = Pointer of int
@@ -29,6 +31,10 @@ let memoryToString (x:Memory) =
     x
     |> List.map string
     |> String.concat (string MEMORY_STRING_SEPARATOR)
+
+// https://stackoverflow.com/a/10365848/4991083
+let private dprintf fmt = Printf.kprintf (fun str ->
+    if IS_DEBUG_MODE then printfn "%s" str) fmt
 
 module Instruction =
     module Param =
@@ -303,7 +309,7 @@ module Instruction =
 
             let newValue = if firstValue < secondValue then 1 else 0
             let outputPos = Param.valueForWriting parameters.[2]
-            let newMem = mem |> replace 1 outputPos
+            let newMem = mem |> replace newValue outputPos
 
             {
                 Memory = Some newMem
@@ -322,7 +328,7 @@ module Instruction =
 
             let newValue = if firstValue = secondValue then 1 else 0
             let outputPos = Param.valueForWriting parameters.[2]
-            let newMem = mem |> replace 1 outputPos
+            let newMem = mem |> replace newValue outputPos
 
             {
                 Memory = Some newMem
@@ -334,6 +340,13 @@ module Instruction =
         | Complete _ -> currentState
         | Running (mem, pointer, input, previousOutputs) ->
             let (Pointer ptr) = pointer
+
+            dprintf
+                "Memory: [%s]\nInstruction pointer: %i\nCurrent instruction: %O\n"
+                (memoryToString mem)
+                ptr
+                instruction
+
             let result =
                 match instruction.OpCode with
                 | OpCode.Type.One -> invokeOne mem instruction.Params |> Some
