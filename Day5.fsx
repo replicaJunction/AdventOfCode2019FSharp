@@ -7,11 +7,11 @@ let puzzleInput = "3,225,1,225,6,6,1100,1,238,225,104,0,101,20,183,224,101,-63,2
 
 module Part1 =
     let solve() =
-        let userInput = IntCode.ProgramInput 1
+        let userInput = [IntCode.ProgramInput 1]
 
         let mem, outputs =
             IntCode.Program.fromString puzzleInput
-            |> IntCode.Program.run (Some userInput)
+            |> IntCode.Program.run userInput
 
         printfn "Complete"
         printfn "\tMemory: [%s]" (IntCode.Program.toString mem)
@@ -31,7 +31,7 @@ module Part2 =
         let checkSingleOutput program input expected =
             printf "    Input %3i:\t" input
 
-            let actualInput = input |> IntCode.ProgramInput |> Some
+            let actualInput = [(input |> IntCode.ProgramInput)]
 
             let (IntCode.ProgramOutput actual) =
                 IntCode.Program.fromString program
@@ -99,11 +99,11 @@ module Part2 =
         checkSingleOutput example7 909 1001
 
     let solve() =
-        let userInput = IntCode.ProgramInput 5
+        let userInput = [IntCode.ProgramInput 5]
 
         let (IntCode.ProgramOutput solution) =
             IntCode.Program.fromString puzzleInput
-            |> IntCode.Program.run (Some userInput)
+            |> IntCode.Program.run userInput
             |> snd
             |> List.head
 

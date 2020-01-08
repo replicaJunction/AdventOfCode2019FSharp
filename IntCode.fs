@@ -9,7 +9,7 @@ type ProgramInput = ProgramInput of int
 type ProgramOutput = ProgramOutput of int
 
 type ProgramState =
-| Running of Memory * Pointer * ProgramInput option * ProgramOutput list
+| Running of Memory * Pointer * ProgramInput list * ProgramOutput list
 | Complete of Memory * ProgramOutput list
 
 let rec replace v i l = //v - value to substitute, i - index at which to substitute, l - the list
@@ -174,6 +174,7 @@ module Instruction =
     type private InstructionResult = {
         Memory: Memory option
         Pointer: Pointer option
+        Input: ProgramInput list option
         Output: ProgramOutput option
     }
 
@@ -203,6 +204,7 @@ module Instruction =
             {
                 Memory = Some newMem
                 Pointer = None
+                Input = None
                 Output = None
             }
 
@@ -225,25 +227,31 @@ module Instruction =
             {
                 Memory = Some newMem
                 Pointer = None
+                Input = None
                 Output = None
             }
 
-        let invokeThree (mem:Memory) input (param:Param.T) =
+        let invokeThree (mem:Memory) (input:ProgramInput list) (param:Param.T) =
             // Defined in Day 5:
             // Opcode 3 takes a single integer as input and saves it to the position given by
             // its only parameter. For example, the instruction 3,50 would take an input value
             // and store it at address 50.
 
-            let (ProgramInput inputRaw) = input
-            let outputPos = Param.valueForWriting param
+            match input with
+            | [] -> failwith "Not enough program input was provided. Opcode 3 requires program input."
+            | i :: remainingInput ->
 
-            let newMem = mem |> replace inputRaw outputPos
+                let (ProgramInput inputRaw) = i
+                let outputPos = Param.valueForWriting param
 
-            {
-                Memory = Some newMem
-                Pointer = None
-                Output = None
-            }
+                let newMem = mem |> replace inputRaw outputPos
+
+                {
+                    Memory = Some newMem
+                    Pointer = None
+                    Input = Some remainingInput
+                    Output = None
+                }
 
         let invokeFour (mem:Memory) (param:Param.T) =
             // Defined in Day 5:
@@ -255,6 +263,7 @@ module Instruction =
             {
                 Memory = None
                 Pointer = None
+                Input = None
                 Output = Some output
             }
 
@@ -275,6 +284,7 @@ module Instruction =
             {
                 Memory = None
                 Pointer = newPointer
+                Input = None
                 Output = None
             }
 
@@ -295,6 +305,7 @@ module Instruction =
             {
                 Memory = None
                 Pointer = newPointer
+                Input = None
                 Output = None
             }
 
@@ -314,6 +325,7 @@ module Instruction =
             {
                 Memory = Some newMem
                 Pointer = None
+                Input = None
                 Output = None
             }
 
@@ -333,6 +345,7 @@ module Instruction =
             {
                 Memory = Some newMem
                 Pointer = None
+                Input = None
                 Output = None
             }
 
@@ -351,10 +364,7 @@ module Instruction =
                 match instruction.OpCode with
                 | OpCode.Type.One -> invokeOne mem instruction.Params |> Some
                 | OpCode.Type.Two -> invokeTwo mem instruction.Params |> Some
-                | OpCode.Type.Three ->
-                    match input with
-                    | None -> failwith "No program input was provided. Opcode 3 requires program input."
-                    | Some i -> invokeThree mem i instruction.Params.[0] |> Some
+                | OpCode.Type.Three -> invokeThree mem input instruction.Params.[0] |> Some
                 | OpCode.Type.Four -> invokeFour mem instruction.Params.[0] |> Some
                 | OpCode.Type.Five -> invokeFive mem instruction.Params |> Some
                 | OpCode.Type.Six -> invokeSix mem instruction.Params |> Some
@@ -383,12 +393,17 @@ module Instruction =
 
                         ptr + (OpCode.paramCount instruction.OpCode) + 1 |> Pointer
 
+                let newInput =
+                    match r.Input with
+                    | Some s -> s
+                    | None -> input
+
                 let newOutputs =
                     match r.Output with
                     | Some s -> previousOutputs @ [s]
                     | None -> previousOutputs
 
-                Running (newMem, newPointer, input, newOutputs)
+                Running (newMem, newPointer, newInput, newOutputs)
 
 module Program =
     let fromString (x:string) : Memory = stringToMemory x
@@ -402,7 +417,7 @@ module Program =
             |> Instruction.invokeInstruction state
             |> step
 
-    let run (input:ProgramInput option) (memory:Memory) =
+    let run (input:ProgramInput list) (memory:Memory) =
         let initialState = Running (memory, (Pointer 0), input, List.empty)
         let result = step initialState
         match result with
@@ -414,3 +429,17 @@ module Program =
                 ptr
                 (toString mem)
                 (outputs |> List.map (fun (ProgramOutput value) -> string value) |> String.concat ",")
+
+let runProgram program =
+    program
+    |> stringToMemory
+    |> Program.run []
+
+let runProgramWithInput (input:int list) program =
+    program
+    |> stringToMemory
+    |> Program.run (input |> List.map ProgramInput)
+
+let firstOutput (memory:Memory, output:ProgramOutput list) =
+    let (ProgramOutput realOutput) = output |> List.head
+    realOutput
