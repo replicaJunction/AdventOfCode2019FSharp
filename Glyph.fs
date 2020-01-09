@@ -226,7 +226,10 @@ let translate (pixels : Pixel list list) =
 
         match toString thisGlyphData with
         | Some s -> s
-        | None -> "?"
+        | None ->
+            match thisGlyphData |> List.rev |> toString with
+            | Some s -> sprintf "%s!" s
+            | None -> "?"
 
         )
     |> String.concat ""
