@@ -171,17 +171,19 @@ module Layer =
 
 module Image =
     let fromString (width, height) (str:string) : Image =
+        let s = str.Replace(" ", "")
+
         let pixelsPerLayer = width * height
-        if str.Length % pixelsPerLayer <> 0 then
+        if s.Length % pixelsPerLayer <> 0 then
             failwithf "The provided string does not match the provided dimensions. Expected a string with length divisible by %i, but got a string of length %i"
                 pixelsPerLayer
-                str.Length
+                s.Length
 
-        let layerCount = str.Length / pixelsPerLayer
+        let layerCount = s.Length / pixelsPerLayer
         [0..layerCount - 1]
         |> List.map (fun layerIndex ->
             let thisStartIndex = layerIndex * pixelsPerLayer
-            let thisLayer = str.Substring(thisStartIndex, pixelsPerLayer)
+            let thisLayer = s.Substring(thisStartIndex, pixelsPerLayer)
 
             //printfn "Layer %i: %s" layerIndex thisLayer
 
@@ -307,11 +309,18 @@ module Part2 =
         let image = Image.fromString (2,2) "0222112222120000"
         let expected = Layer.fromString (2,2) "0110"
 
+        let image2 = Image.fromString (4,4) "00002222111122221111111111110000"
+        let expected2 = Layer.fromString (4,4) "0000111111110000"
+
+        let image3 = Image.fromString (2,2) "2222 2121 2222 0202 2222 0000"
+        let expected3 = Layer.fromString (2,2) "0101"
+
         Testing.check (Image.flatten) debug (image, expected)
+        Testing.check (Image.flatten) debug (image2, expected2)
+        Testing.check (Image.flatten) debug (image3, expected3)
 
     let solve () =
         let image = PuzzleInput.read 8 |> Image.fromString (25, 6)
-
         image |> Image.render
 
         //let answer = image |> Image.flatten |> Layer.toString
@@ -321,5 +330,5 @@ module Part2 =
 //Part1.check false
 //Part1.solve()
 
-//Part2.check false
+Part2.check false
 Part2.solve()
