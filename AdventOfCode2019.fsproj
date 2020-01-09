@@ -7,6 +7,9 @@
 
   <ItemGroup>
     <Compile Include="IntCode.fs" />
+    <Compile Include="PuzzleInput.fs" />
+    <Compile Include="Glyph.fs" />
+    <Compile Include="Testing.fs" />
     <None Include="Test.fsx" />
     <None Include="Day1.fsx" />
     <None Include="Day2.fsx" />
@@ -16,6 +19,7 @@
     <None Include="Day5.fsx" />
     <None Include="Day6.fsx" />
     <None Include="Day7.fsx" />
+    <None Include="Day8.fsx" />
   </ItemGroup>
 
 </Project>
