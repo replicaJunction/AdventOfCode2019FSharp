@@ -7,20 +7,18 @@ let puzzleInput = "3,225,1,225,6,6,1100,1,238,225,104,0,101,20,183,224,101,-63,2
 
 module Part1 =
     let solve() =
-        let userInput = [IntCode.ProgramInput 1]
+        let userInput = [1]
 
-        let mem, outputs =
-            IntCode.Program.fromString puzzleInput
-            |> IntCode.Program.run userInput
+        let prgm = IntCode.runProgramWithInput userInput puzzleInput
 
         printfn "Complete"
-        printfn "\tMemory: [%s]" (IntCode.Program.toString mem)
+        printfn "\tMemory: [%s]" (IntCode.Memory.toString prgm.Memory)
 
-        if (List.isEmpty outputs) then
+        if (List.isEmpty prgm.Outputs) then
             printfn "\tNo outputs"
         else
             printfn "\tOutputs:"
-            outputs
+            prgm.Outputs
             |> List.map (fun (IntCode.ProgramOutput o) ->
                 printfn "\t%i" o
                 )
@@ -31,13 +29,17 @@ module Part2 =
         let checkSingleOutput program input expected =
             printf "    Input %3i:\t" input
 
-            let actualInput = [(input |> IntCode.ProgramInput)]
+            let actual =
+                IntCode.runProgramWithInput [input] program
+                |> IntCode.firstOutput
 
-            let (IntCode.ProgramOutput actual) =
-                IntCode.Program.fromString program
-                |> IntCode.Program.run actualInput
-                |> snd
-                |> List.head
+            //let actualInput = [(input |> IntCode.ProgramInput)]
+
+            //let (IntCode.ProgramOutput actual) =
+            //    IntCode.Program.fromString program
+            //    |> IntCode.Program.run actualInput
+            //    |> snd
+            //    |> List.head
 
             if expected = actual then
                 printfn "\t+ OK: [%i]" actual
@@ -99,13 +101,11 @@ module Part2 =
         checkSingleOutput example7 909 1001
 
     let solve() =
-        let userInput = [IntCode.ProgramInput 5]
+        let userInput = [5]
 
-        let (IntCode.ProgramOutput solution) =
-            IntCode.Program.fromString puzzleInput
-            |> IntCode.Program.run userInput
-            |> snd
-            |> List.head
+        let solution =
+            IntCode.runProgramWithInput userInput puzzleInput
+            |> IntCode.firstOutput
 
         printfn "Part 2 solution: %i" solution
 

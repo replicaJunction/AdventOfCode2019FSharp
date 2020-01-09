@@ -8,16 +8,18 @@
 let puzzleInput = "1,0,0,3,1,1,2,3,1,3,4,3,1,5,0,3,2,10,1,19,1,19,9,23,1,23,13,27,1,10,27,31,2,31,13,35,1,10,35,39,2,9,39,43,2,43,9,47,1,6,47,51,1,10,51,55,2,55,13,59,1,59,10,63,2,63,13,67,2,67,9,71,1,6,71,75,2,75,9,79,1,79,5,83,2,83,13,87,1,9,87,91,1,13,91,95,1,2,95,99,1,99,6,0,99,2,14,0,0"
 
 let run prgm =
-    IntCode.Program.run [] prgm
-    |> fst
+    let programOutput = IntCode.runProgram prgm
+    programOutput.Memory |> IntCode.Memory.atPosition 0
 
 module Part1 =
     let checkTestCases() =
         let check program expected =
             printfn "\nRunning program: %s" program
 
-            let prgm = IntCode.Program.fromString program
-            let result = run prgm |> IntCode.Program.toString
+            let programResult = IntCode.runProgram program
+            let result =
+                programResult.Memory
+                |> IntCode.Memory.toString
 
             if result = expected then
                 printfn "OK: %s" result
@@ -33,12 +35,13 @@ module Part1 =
         printfn ""
 
     let solve() =
-        let puzzleProgram =
-            IntCode.Program.fromString puzzleInput
+        let puzzleMemory =
+            IntCode.Memory.fromString puzzleInput
             |> IntCode.replace 12 1
             |> IntCode.replace 2 2
+            |> IntCode.Memory.toString
 
-        let result = run puzzleProgram |> List.head
+        let result = run puzzleMemory
         printfn "\nPart 1 solution: %i\n" result
 
 module Part2 =
@@ -50,8 +53,9 @@ module Part2 =
                 puzzleProgram
                 |> IntCode.replace noun 1
                 |> IntCode.replace verb 2
+                |> IntCode.Memory.toString
 
-            codes |> run |> List.head
+            codes |> run
 
         let desiredOutput = 19690720
         let noun,verb =
